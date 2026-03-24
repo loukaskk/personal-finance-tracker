@@ -92,9 +92,47 @@ const getTransactionById = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+const updateTransaction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, type, category } = req.body;
+
+    if (typeof amount !== "number") {
+      return res.status(400).json({ error: "Amount must be a number" });
+    }
+
+    if (type !== "income" && type !== "expense") {
+      return res.status(400).json({ error: "Type must be income or expense" });
+    }
+
+    if (typeof category !== "string") {
+      return res.status(400).json({ error: "Category must be a string" });
+    }
+
+    const result = await db.query(
+      `UPDATE transactions
+       SET amount = $1, type = $2, category = $3
+       WHERE id = $4
+       RETURNING *`,
+      [amount, type, category, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error updating transaction:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   getTransactions,
   createTransaction,
   deleteTransaction,
   getTransactionById,
+  updateTransaction,
 };
